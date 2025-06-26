@@ -53,7 +53,8 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+uint32_t DWT_Delay_Init(void);
+void DWT_Delay_us(volatile uint32_t microseconds);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -61,6 +62,10 @@ void Error_Handler(void);
 #define ENC_A2_GPIO_Port GPIOA
 #define ENC_B2_Pin GPIO_PIN_1
 #define ENC_B2_GPIO_Port GPIOA
+#define BAT_Pin GPIO_PIN_4
+#define BAT_GPIO_Port GPIOA
+#define VUSB_Pin GPIO_PIN_5
+#define VUSB_GPIO_Port GPIOA
 #define ENC_A1_Pin GPIO_PIN_6
 #define ENC_A1_GPIO_Port GPIOA
 #define ENC_B1_Pin GPIO_PIN_7
@@ -81,9 +86,13 @@ void Error_Handler(void);
 #define LED_GPIO_Port GPIOB
 #define LiDAR_EN_Pin GPIO_PIN_4
 #define LiDAR_EN_GPIO_Port GPIOB
+#define MPU_SCL_Pin GPIO_PIN_8
+#define MPU_SCL_GPIO_Port GPIOB
+#define MPU_SDA_Pin GPIO_PIN_9
+#define MPU_SDA_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
-
+#define HAL_Delay_us(us)   DWT_Delay_us(us)
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

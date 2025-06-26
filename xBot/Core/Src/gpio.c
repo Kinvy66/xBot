@@ -51,13 +51,22 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, AIN2_Pin|AIN1_Pin|LED_Pin|LiDAR_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, AIN2_Pin|AIN1_Pin|LED_Pin|LiDAR_EN_Pin
+                          |MPU_SCL_Pin|MPU_SDA_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, BIN1_Pin|BIN2_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : AIN2_Pin AIN1_Pin LED_Pin LiDAR_EN_Pin */
-  GPIO_InitStruct.Pin = AIN2_Pin|AIN1_Pin|LED_Pin|LiDAR_EN_Pin;
+  /*Configure GPIO pin : VUSB_Pin */
+  GPIO_InitStruct.Pin = VUSB_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(VUSB_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : AIN2_Pin AIN1_Pin LED_Pin LiDAR_EN_Pin
+                           MPU_SCL_Pin MPU_SDA_Pin */
+  GPIO_InitStruct.Pin = AIN2_Pin|AIN1_Pin|LED_Pin|LiDAR_EN_Pin
+                          |MPU_SCL_Pin|MPU_SDA_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
