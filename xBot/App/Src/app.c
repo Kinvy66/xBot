@@ -45,6 +45,39 @@ void app_main()
 
 	while(1)
 	{
+		loop_cnt++;
+		if (loop_cnt >= 20)
+		{
+			mcu_data.vbat_mv= adc_val / 20.0;
+			if (vusb_val / 20.0 >= 0.5)
+			{
+				mcu_data.charger_connected = 1;
+			} else
+			{
+				mcu_data.charger_connected = 0;
+			}
+			if(stat_val/20.0 >= 0.5)//平均值>0.5，表示大多数为高电平，则认为是1
+				mcu_data.fully_charged = 1;
+			else
+				mcu_data.fully_charged = 0;
 
+			//清零累计值
+			stat_val = 0;
+			vusb_val = 0;
+			adc_val = 0;
+			loop_cnt = 0;
+		}
+		enable_power=cmd_data.enable_power;//根据命令决定是否开启雷达
+		if(last_enable_power==0 && enable_power==1)//打开雷达
+		{
+			// gpio_pwm_open();
+		}
+		else if(last_enable_power==1 && enable_power==0)
+		{
+			// gpio_pwm_close();
+		}
+
+		last_enable_power = enable_power;
+		HAL_Delay(10);
 	}
 }
