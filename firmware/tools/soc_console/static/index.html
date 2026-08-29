@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>xBot SOC 控制台</title>
+  <link rel="stylesheet" href="/static/app.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <span class="mark"></span>
+      <div>
+        <h1>xBot SOC 控制台</h1>
+        <p>模拟香橙派 · USART1 · 115200 8N1 · 20 ms 心跳</p>
+      </div>
+    </div>
+    <div class="link" id="linkPill">未连接</div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>串口</h2>
+      <div class="row">
+        <select id="port"></select>
+        <button type="button" class="ghost" id="refreshPorts">刷新</button>
+      </div>
+      <div class="row">
+        <label>波特率
+          <input id="baud" type="number" value="115200" step="1" min="9600" />
+        </label>
+      </div>
+      <div class="row">
+        <button type="button" class="primary" id="btnConnect">连接</button>
+        <button type="button" id="btnDemo">演示模式</button>
+        <button type="button" class="ghost" id="btnDisconnect">断开</button>
+      </div>
+      <p class="hint" id="connHint">PC USB 转串口 ↔ MCU PA10/PA9（交叉：PC TX→RX1，PC RX←TX1），共地。</p>
+
+      <h2>控制</h2>
+      <div class="row">
+        <button type="button" class="danger" id="btnStop">急停 Space</button>
+        <label class="toggle">
+          <input type="checkbox" id="lidar" />
+          <span>雷达电源 enable_power</span>
+        </label>
+      </div>
+      <label class="block">最大 PWM <strong id="maxPwmVal">2000</strong>
+        <input id="maxPwm" type="range" min="200" max="8000" step="50" value="2000" />
+      </label>
+      <label class="block">左轮 pwm1 <strong id="pwm1Val">0</strong>
+        <input id="pwm1" type="range" min="-2000" max="2000" step="1" value="0" />
+      </label>
+      <label class="block">右轮 pwm2 <strong id="pwm2Val">0</strong>
+        <input id="pwm2" type="range" min="-2000" max="2000" step="1" value="0" />
+      </label>
+      <p class="hint">正值前进。键盘 WASD / 方向键为按住行驶，松开回滑条值。</p>
+      <div class="pad" id="pad">
+        <button type="button" data-key="q" class="tiny">Q 原地左</button>
+        <button type="button" data-key="w">W</button>
+        <button type="button" data-key="e" class="tiny">E 原地右</button>
+        <button type="button" data-key="a">A</button>
+        <button type="button" data-key="s">S</button>
+        <button type="button" data-key="d">D</button>
+      </div>
+    </section>
+
+    <section class="panel grow">
+      <h2>MCU 上报</h2>
+      <div class="metrics">
+        <article>
+          <span>电池</span>
+          <strong id="vbat">—</strong>
+          <em>mV</em>
+        </article>
+        <article>
+          <span>左轮增量 encoder1</span>
+          <strong id="enc1">—</strong>
+        </article>
+        <article>
+          <span>右轮增量 encoder2</span>
+          <strong id="enc2">—</strong>
+        </article>
+        <article>
+          <span>充电 / 满电 / ASR</span>
+          <strong id="flags">—</strong>
+        </article>
+      </div>
+      <canvas id="chart" width="720" height="180"></canvas>
+      <div class="stats">
+        <span>RX <strong id="rxHz">0</strong> Hz</span>
+        <span>TX <strong id="txCount">0</strong></span>
+        <span>RX 帧 <strong id="rxCount">0</strong></span>
+        <span id="errLine"></span>
+      </div>
+      <h3>最近帧</h3>
+      <pre id="txHex">TX CmdData (12 B)</pre>
+      <pre id="rxHex">RX McuData (16 B)</pre>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

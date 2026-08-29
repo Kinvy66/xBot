@@ -1,14 +1,22 @@
 /**
  * @file app.h
- * @brief 用户程序入口
- * @date 2026/6/11
- * @author Kinvy
- * @details 
+ * @brief Application entry — create worker tasks from app_main
  */
-
 #ifndef XBOT_APP_H
 #define XBOT_APP_H
 
-void app_main();
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#endif //XBOT_APP_H
+/**
+ * Boot entry run by the single Cube-created RTOS thread.
+ * Initializes app state, creates chassis / sensor / status tasks, then exits.
+ */
+void app_main(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* XBOT_APP_H */
