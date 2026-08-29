@@ -28,10 +28,14 @@ static void lidar_power_apply(uint8_t enable)
 
 static void read_encoders(int16_t *enc1, int16_t *enc2)
 {
-  *enc1 = -(int16_t)__HAL_TIM_GET_COUNTER(&htim2);
-  *enc2 = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
-  __HAL_TIM_SET_COUNTER(&htim2, 0);
+  /* pin_map: 左 TIM3 (PA6/7)，右 TIM2 (PA0/1)。用有符号差分，前进为正。 */
+  int16_t left = (int16_t)__HAL_TIM_GET_COUNTER(&htim3);
+  int16_t right = (int16_t)__HAL_TIM_GET_COUNTER(&htim2);
   __HAL_TIM_SET_COUNTER(&htim3, 0);
+  __HAL_TIM_SET_COUNTER(&htim2, 0);
+  /* 左轮安装方向与右轮镜像，取反使前进同为正 */
+  *enc1 = (int16_t)(-left);
+  *enc2 = right;
 }
 
 void task_chassis_init(void)

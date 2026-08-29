@@ -46,7 +46,7 @@ void MX_TIM1_Init(void)
   htim1.Instance = TIM1;
   htim1.Init.Prescaler = 0;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.Period = 65535;
+  htim1.Init.Period = 6399;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim1.Init.RepetitionCounter = 0;
   htim1.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -87,7 +87,9 @@ void MX_TIM1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM1_Init 2 */
-
+  /* Cube default ARR=65535 makes console PWM (~2000) only ~3% duty.
+   * SYSCLK/TIM1 = 64 MHz → ARR=6399 ≈ 10 kHz PWM. */
+  __HAL_TIM_SET_AUTORELOAD(&htim1, 6399);
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
 
@@ -112,7 +114,7 @@ void MX_TIM2_Init(void)
   htim2.Init.Period = 65535;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -132,7 +134,22 @@ void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-
+  /* x4 quadrature (TI1+TI2 edges); Cube default TI1 is only x2 */
+  {
+    TIM_Encoder_InitTypeDef enc = {0};
+    enc.EncoderMode = TIM_ENCODERMODE_TI12;
+    enc.IC1Polarity = TIM_ICPOLARITY_RISING;
+    enc.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+    enc.IC1Prescaler = TIM_ICPSC_DIV1;
+    enc.IC1Filter = 4;
+    enc.IC2Polarity = TIM_ICPOLARITY_RISING;
+    enc.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+    enc.IC2Prescaler = TIM_ICPSC_DIV1;
+    enc.IC2Filter = 4;
+    if (HAL_TIM_Encoder_Init(&htim2, &enc) != HAL_OK) {
+      Error_Handler();
+    }
+  }
   /* USER CODE END TIM2_Init 2 */
 
 }
@@ -156,7 +173,7 @@ void MX_TIM3_Init(void)
   htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  sConfig.EncoderMode = TIM_ENCODERMODE_TI1;
+  sConfig.EncoderMode = TIM_ENCODERMODE_TI12;
   sConfig.IC1Polarity = TIM_ICPOLARITY_RISING;
   sConfig.IC1Selection = TIM_ICSELECTION_DIRECTTI;
   sConfig.IC1Prescaler = TIM_ICPSC_DIV1;
@@ -176,7 +193,21 @@ void MX_TIM3_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM3_Init 2 */
-
+  {
+    TIM_Encoder_InitTypeDef enc = {0};
+    enc.EncoderMode = TIM_ENCODERMODE_TI12;
+    enc.IC1Polarity = TIM_ICPOLARITY_RISING;
+    enc.IC1Selection = TIM_ICSELECTION_DIRECTTI;
+    enc.IC1Prescaler = TIM_ICPSC_DIV1;
+    enc.IC1Filter = 4;
+    enc.IC2Polarity = TIM_ICPOLARITY_RISING;
+    enc.IC2Selection = TIM_ICSELECTION_DIRECTTI;
+    enc.IC2Prescaler = TIM_ICPSC_DIV1;
+    enc.IC2Filter = 4;
+    if (HAL_TIM_Encoder_Init(&htim3, &enc) != HAL_OK) {
+      Error_Handler();
+    }
+  }
   /* USER CODE END TIM3_Init 2 */
 
 }
@@ -220,7 +251,11 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM2_MspInit 1 */
-
+    /* Encoder lines need pull-ups (open-collector / weak module outputs) */
+    GPIO_InitStruct.Pin = EN_A2_Pin|EN_B2_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   /* USER CODE END TIM2_MspInit 1 */
   }
   else if(tim_encoderHandle->Instance==TIM3)
@@ -242,7 +277,10 @@ void HAL_TIM_Encoder_MspInit(TIM_HandleTypeDef* tim_encoderHandle)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN TIM3_MspInit 1 */
-
+    GPIO_InitStruct.Pin = EN_A1_Pin|EN_B1_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
   /* USER CODE END TIM3_MspInit 1 */
   }
 }

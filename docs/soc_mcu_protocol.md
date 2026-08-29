@@ -91,7 +91,7 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 
 | 字段 | 来源 |
 |------|------|
-| `encoder1` / `encoder2` | 每 20 ms 读定时器并清零；`encoder1 = -TIM2.CNT`，`encoder2 = TIM3.CNT`（符号校正前进为正） |
+| `encoder1` / `encoder2` | 每 20 ms 读定时器并清零；**左** `encoder1 = -TIM3.CNT`，**右** `encoder2 = TIM2.CNT`（与 `pin_map`：TIM3=左、TIM2=右；符号校正前进为正） |
 | `vbat_mv` | PA4 ADC，约 200 ms 滑动平均（20 次 × 主循环 10 ms） |
 | `charger_connected` | 原厂用 PA5 数字电平平均判断 USB/充电接入 |
 | `fully_charged` | 原厂用 PB3 充电状态脚平均判断满电 |
@@ -147,8 +147,8 @@ MCU 在 `0→1` / `1→0` 边沿做软开关（渐开/渐关 PWM 驱动 MOS）�
 
 | 名称 | 角色 | MCU 采样 |
 |------|------|----------|
-| `encoder1` / `pwm1` / `target1` | **左轮** | `-read_encoder_tim2()` |
-| `encoder2` / `pwm2` / `target2` | **右轮** | `read_encoder_tim3()` |
+| `encoder1` / `pwm1` / `target1` | **左轮** | `-TIM3`（EN_A1/B1） |
+| `encoder2` / `pwm2` / `target2` | **右轮** | `TIM2`（EN_A2/B2） |
 
 正脉冲表示该轮朝前进方向转动。SOC 里程计：
 

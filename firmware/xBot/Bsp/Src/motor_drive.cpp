@@ -31,6 +31,8 @@ extern "C" void motor_drive_init(void)
 {
   s_left.begin();
   s_right.begin();
+  /* Ensure TIM1 main output enabled for CH1 + CH4 */
+  __HAL_TIM_MOE_ENABLE(&htim1);
 }
 
 extern "C" void motor_drive_set(int16_t left, int16_t right)
