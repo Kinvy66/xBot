@@ -5,6 +5,7 @@
 #include "task_chassis.h"
 
 #include "app_state.h"
+#include "lidar_power.h"
 #include "motor_drive.h"
 #include "soc_link.h"
 #include "soc_protocol.h"
@@ -20,11 +21,6 @@ static uint8_t s_enable_power;
 static uint8_t s_last_enable_power;
 static uint8_t s_heartbeat_miss;
 static uint8_t s_asr_rx_byte;
-
-static void lidar_power_apply(uint8_t enable)
-{
-  (void)enable; /* PB4 pending CubeMX GPIO */
-}
 
 static void read_encoders(int16_t *enc1, int16_t *enc2)
 {
@@ -51,6 +47,9 @@ void task_chassis_init(void)
   (void)HAL_TIM_Encoder_Start(&htim3, TIM_CHANNEL_ALL);
 
   motor_drive_init();
+
+  /* Boot self-check: spin LiDAR ~2 s, then leave off until SOC enable_power */
+  lidar_power_selftest();
 
   soc_link_init(&huart1);
   soc_link_start();
@@ -87,7 +86,7 @@ void task_chassis(void *argument)
     }
 
     if (s_enable_power != s_last_enable_power) {
-      lidar_power_apply(s_enable_power);
+      lidar_power_set(s_enable_power);
       s_last_enable_power = s_enable_power;
     }
 

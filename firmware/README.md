@@ -150,7 +150,7 @@ cmake --build --preset Debug -j
 | USART2 | ↔ CI-03T 离线语音 |
 | ADC1 | 电池 / USB 采样 |
 | I2C1（PB8/PB9 重映射） | 外挂 MPU6050 |
-| PB4 | 雷达 5V MOS（Cube 待补齐时按引脚表配置） |
+| PB4 | 雷达 5V MOS（`Lida_Pin`；`enable_power` + 上电自检转约 2 s） |
 
 细节以 `docs/pin_map.md` 为准。
 

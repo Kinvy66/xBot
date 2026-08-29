@@ -79,6 +79,8 @@ void Error_Handler(void);
 #define BIN2_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_3
 #define LED_GPIO_Port GPIOB
+#define Lida_Pin GPIO_PIN_4
+#define Lida_GPIO_Port GPIOB
 #define MPU_SCL_Pin GPIO_PIN_6
 #define MPU_SCL_GPIO_Port GPIOB
 #define MPU_SDA_Pin GPIO_PIN_7

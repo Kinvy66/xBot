@@ -246,9 +246,9 @@ MSP 同时配置 PA4/PA5；Cube 常规转换通道当前为 `ADC_CHANNEL_5`（PA
 
 | 信号 | 引脚 | 方向 | 说明 |
 |------|------|------|------|
-| LiDarSwitch | PB4 | 推挽输出 | 控制雷达 5V MOS；原厂宏 `LIDAR_POWER`，默认关 |
+| LiDarSwitch | PB4 | 推挽输出 | 控制雷达 5V MOS；Cube 宏 `Lida_Pin`（标签 `Lida`），高电平开，默认关 |
 
-当前 `xBot.ioc` 若尚未勾选该脚，移植雷达电源控制时需补 GPIO，并保持 `SWJ_NOJTAG`。
+上电自检：`task_chassis_init()` 内开约 2 s 再关；之后由 SOC `CmdData.enable_power` 控制。保持 `SWJ_NOJTAG`。
 
 ---
 
@@ -279,7 +279,7 @@ MSP 同时配置 PA4/PA5；Cube 常规转换通道当前为 `ADC_CHANNEL_5`（PA
 | GPIOA | PA12, PA15 | TB6612 BIN1 / BIN2 |
 | GPIOA | PA13, PA14 | SWD |
 | GPIOB | PB3 | LED |
-| GPIOB | PB4 | 雷达电源（硬件；Cube 待补） |
+| GPIOB | PB4 | 雷达电源（`Lida_Pin`） |
 | GPIOB | PB6, PB7 | 外挂 MPU6050（I2C1） |
 | GPIOB | PB12, PB15 | TB6612 AIN2 / AIN1 |
 
@@ -310,10 +310,10 @@ MSP 同时配置 PA4/PA5；Cube 常规转换通道当前为 `ADC_CHANNEL_5`（PA
 #define BIN2_GPIO_Port          GPIOA
 #define LED_Pin                 GPIO_PIN_3
 #define LED_GPIO_Port           GPIOB
+#define Lida_Pin                GPIO_PIN_4
+#define Lida_GPIO_Port          GPIOB
 #define MPU_SCL_Pin             GPIO_PIN_6
 #define MPU_SCL_GPIO_Port       GPIOB
 #define MPU_SDA_Pin             GPIO_PIN_7
 #define MPU_SDA_GPIO_Port       GPIOB
 ```
-
-`PB4` 雷达电源宏尚未写入本工程 `main.h`；原厂为 `LIDAR_POWER` → `PBout(4)`。
