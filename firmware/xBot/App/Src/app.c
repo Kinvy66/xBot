@@ -13,7 +13,7 @@
 #include "cmsis_os.h"
 
 #define CHASSIS_STACK_BYTES  (384U * 4U)
-#define SENSOR_STACK_BYTES   (256U * 4U)
+#define SENSOR_STACK_BYTES   (512U * 4U)
 #define STATUS_STACK_BYTES   (256U * 4U)
 
 static osThreadId_t create_task(osThreadFunc_t fn, const char *name,

@@ -60,7 +60,7 @@ FreeRTOS：`Core/freertos.c` 只创建启动线程并调用 `app_main()`；工�
 
 ## SOC 通信（已实现）
 
-- 帧定义：`Protocol/Inc/soc_protocol.h`（`McuData` 16B / `CmdData` 12B）
+- 帧定义：`Protocol/Inc/soc_protocol.h`（`McuData` 29B / `CmdData` 12B）
 - USART1 链路：`Protocol/Src/soc_link.c`（DMA + IDLE 收命令，任务内发状态）
 - 20 ms 循环：`App/Src/app.c` → `app_chassis_tick()`（心跳停 PWM、编码器、电机）
 - 文档：[`docs/soc_mcu_protocol.md`](../docs/soc_mcu_protocol.md)

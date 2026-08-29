@@ -19,13 +19,13 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 ```
 香橙派 base_control                STM32 底盘固件
         │                                │
-        │◄──── McuData (16 B) ──────────│  每 20 ms 主动上报
+        │◄──── McuData (29 B) ──────────│  每 20 ms 主动上报
         │                                │
         │──── CmdData  (12 B) ─────────►│  每 20 ms 下发控制
         │                                │
 ```
 
-- **上行 `McuData`**：MCU → SOC。SysTick 周期（20 ms）内读编码器、填状态，再整帧写出 USART1。
+- **上行 `McuData`**：MCU → SOC。SysTick 周期（20 ms）内读编码器、IMU、填状态，再整帧写出 USART1。
 - **下行 `CmdData`**：SOC → MCU。ROS 侧读完一帧 `McuData` 后做差速/PID，再发一帧 `CmdData`。
 - 帧定界：尾部固定 **`T` `A` `\r` `\n`**（`0x54 0x41 0x0D 0x0A`）；收端看到该四字节即认为一帧结束，再校验头与长度。
 
@@ -50,7 +50,7 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 
 1. `head1/head2 == 'D''A'`
 2. `struct_size == 本帧实际长度`
-3. 长度等于约定结构体大小（`McuData`=16 或 `CmdData`=12）
+3. 长度等于约定结构体大小（`McuData`=29 或 `CmdData`=12）
 
 非法帧丢弃，不更新控制量。
 
@@ -58,31 +58,36 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 
 ## 3. 上行帧 `McuData`（MCU → SOC）
 
-**总长 16 字节**，`struct_size = 16`（`0x10`）。
+**总长 29 字节**，`struct_size = 29`（`0x1D`）。相对原厂 16 B 帧，在 `asr_id` 与帧尾之间插入 MPU6050 原始量（xBot 扩展）。
 
 | 偏移 | 字段 | 类型 | 说明 |
 |------|------|------|------|
-| 0–2 | 头 + `struct_size` | — | `'D''A'` + `16` |
+| 0–2 | 头 + `struct_size` | — | `'D''A'` + `29` |
 | 3–4 | `encoder1` | `int16` | 本周期左轮脉冲增量（软件约定，见 §5） |
 | 5–6 | `encoder2` | `int16` | 本周期右轮脉冲增量 |
 | 7–8 | `vbat_mv` | `int16` | 电池电压，单位 **mV** |
 | 9 | `charger_connected` | `uint8` | `1`=充电器/USB 接入，`0`=未接 |
 | 10 | `fully_charged` | `uint8` | `1`=充满，`0`=未满 |
 | 11 | `asr_id` | `uint8` | 离线语音命令 ID；无新命令时为 **0** |
-| 12–15 | 尾 | — | `'T''A''\r''\n'` |
+| 12 | `imu_ok` | `uint8` | `1`=本周期 MPU 采样有效，`0`=无效/未就绪 |
+| 13–14 | `ax` | `int16` | 加速度计 X 原始值（±2 g，16384 ≈ 1 g） |
+| 15–16 | `ay` | `int16` | 加速度计 Y |
+| 17–18 | `az` | `int16` | 加速度计 Z |
+| 19–20 | `gx` | `int16` | 陀螺仪 X 原始值（±250 °/s） |
+| 21–22 | `gy` | `int16` | 陀螺仪 Y |
+| 23–24 | `gz` | `int16` | 陀螺仪 Z |
+| 25–28 | 尾 | — | `'T''A''\r''\n'` |
 
 ### 3.1 十六进制布局示例
 
 ```
-偏移:  00 01 02  03 04  05 06  07 08  09 0A 0B  0C 0D 0E 0F
-字段:  D  A  10  enc1   enc2   vbat   ch fu as  T  A  \r \n
-例:    44 41 10  E8 FF  64 00  D0 2E  01 00 00  54 41 0D 0A
-含义:  头     16  -24    100    12000  充电中 无ASR  尾
+偏移:  00 01 02  03 04  05 06  07 08  09 0A 0B  0C  0D 0E  0F 10  11 12  13 14  15 16  17 18  19 1A 1B 1C
+字段:  D  A  1D  enc1   enc2   vbat   ch fu as  ok  ax     ay     az     gx     gy     gz     T  A  \r \n
+例:    44 41 1D  E8 FF  64 00  D0 2E  01 00 00  01  0A 00  14 00  00 40  FF FF  02 00  03 00  54 41 0D 0A
+含义:  头     29  -24    100    12000  充电 无ASR IMU有效  ax=10 ay=20 az=16384 gx=-1 gy=2 gz=3  尾
 ```
 
-（`encoder1=-24` → `E8 FF`；`vbat_mv=12000` → `D0 2E`。）
-
-### 3.2 字段生成（原厂固件行为）
+### 3.2 字段生成（原厂固件行为 + xBot IMU）
 
 | 字段 | 来源 |
 |------|------|
@@ -91,8 +96,9 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 | `charger_connected` | 原厂用 PA5 数字电平平均判断 USB/充电接入 |
 | `fully_charged` | 原厂用 PB3 充电状态脚平均判断满电 |
 | `asr_id` | USART2 收到 CI-03T 单字节则填入本周期；否则置 0（只上报一次） |
+| `imu_ok` / `ax`…`gz` | xBot：`sensor_task` 读 MPU6050（I2C2），经 `app_state` 写入本帧；`imu_ok=0` 时其余 IMU 字段置 0 |
 
-> 注：xBot 将 PB3 用作 LED、PA5 作模拟采样时，充电两字节的采样实现可改，但**帧字段布局保持不变**。
+> 注：xBot 将 PB3 用作 LED、PA5 作模拟采样时，充电两字节的采样实现可改，但**帧字段布局保持不变**（相对本文件约定的 29 B 扩展帧）。
 
 ---
 
@@ -178,7 +184,7 @@ typedef struct
 {
     unsigned char head1;              /* 'D' */
     unsigned char head2;              /* 'A' */
-    unsigned char struct_size;        /* 16 */
+    unsigned char struct_size;        /* 29 */
 
     short encoder1;
     short encoder2;
@@ -189,11 +195,19 @@ typedef struct
 
     unsigned char asr_id;
 
+    unsigned char imu_ok;
+    short ax;
+    short ay;
+    short az;
+    short gx;
+    short gy;
+    short gz;
+
     unsigned char end1;               /* 'T' */
     unsigned char end2;               /* 'A' */
     unsigned char end3;               /* '\r' */
     unsigned char end4;               /* '\n' */
-} McuData;                            /* sizeof == 16 */
+} McuData;                            /* sizeof == 29 */
 
 typedef struct
 {
@@ -231,6 +245,7 @@ CmdData cmd_data = {'D', 'A', sizeof(CmdData), 0, 0, 0, 'T', 'A', '\r', '\n'};
 | SOC←MCU | `/odom`、TF | `nav_msgs/Odometry` | 由 `encoder1/2` 积分 |
 | SOC←MCU | 电池话题 | `sensor_msgs/BatteryState` | `vbat_mv`、`charger_*`、`fully_charged` |
 | SOC←MCU | `/asr_id` | `std_msgs/Int32` | `asr_id != 0` 时发布 |
+| SOC←MCU | `/imu/data_raw`（规划） | `sensor_msgs/Imu` | `imu_ok` 时由 `ax`…`gz` 换算 |
 | SOC←MCU | `/robot_state` 等 | 多数组 | 调试用编码器/PWM/电压 |
 | SOC→MCU | `/cmd_vel` | `geometry_msgs/Twist` | → PID → `pwm1/pwm2` |
 | SOC→MCU | `/enable_lidar` | `std_msgs/Bool` | → `enable_power` |
@@ -250,9 +265,10 @@ CmdData cmd_data = {'D', 'A', sizeof(CmdData), 0, 0, 0, 'T', 'A', '\r', '\n'};
 
 ## 10. 实现检查清单（xBot）
 
-- [ ] 两端结构体 `#pragma pack(1)`，`sizeof(McuData)==16`，`sizeof(CmdData)==12`
+- [ ] 两端结构体 `#pragma pack(1)`，`sizeof(McuData)==29`，`sizeof(CmdData)==12`
 - [ ] 帧头 `'DA'`、帧尾 `"TA\r\n"`，`struct_size` 等于整帧长度
 - [ ] 20 ms 周期；MCU 心跳超时停 PWM
 - [ ] `pwm` / `encoder` 符号：前进为正；左右与差速公式一致
 - [ ] `enable_power` 控制雷达 MOS（`PB4`）
+- [ ] `imu_ok` / `ax`…`gz` 与 MPU6050 采样一致；失败时 `imu_ok=0`
 - [ ] 小端序；勿在中间插入对齐填充

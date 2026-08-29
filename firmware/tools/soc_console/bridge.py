@@ -1,6 +1,7 @@
 """20 ms serial (or demo) loop: TX CmdData, RX McuData."""
 from __future__ import annotations
 
+import math
 import threading
 import time
 from typing import Callable
@@ -202,7 +203,24 @@ class SocBridge:
         enc1 = int(self._demo_enc1)
         enc2 = int(self._demo_enc2)
         vbat = 12400 + (cmd.enable_power * 80)
-        frame = pack_mcu(enc1, enc2, vbat)
+        t = time.monotonic()
+        roll = math.sin(t * 0.7) * 0.45
+        pitch = math.cos(t * 0.5) * 0.35
+        ax = int(-math.sin(pitch) * 16384)
+        ay = int(math.sin(roll) * math.cos(pitch) * 16384)
+        az = int(math.cos(roll) * math.cos(pitch) * 16384)
+        frame = pack_mcu(
+            enc1,
+            enc2,
+            vbat,
+            imu_ok=1,
+            ax=ax,
+            ay=ay,
+            az=az,
+            gx=int(math.cos(t * 0.7) * 40),
+            gy=int(-math.sin(t * 0.5) * 30),
+            gz=int(math.sin(t * 0.2) * 20),
+        )
         with self._lock:
             self._rx_buf.extend(frame)
 

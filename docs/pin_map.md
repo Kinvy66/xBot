@@ -28,7 +28,7 @@ SOC ↔ STM32 串口帧协议见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。
 │  40Pin：SPI3 + GPIO 液晶屏   │         │                              │
 │  40Pin：UART9 + GPIO 雷达    │         │  PB4 → MOS → 雷达 5V 电源    │
 │  3.5mm 耳机 → 功放 / 喇叭    │         │  CI-03T / 电机 / 编码器 / ADC│
-│  USB 摄像头 / USB 麦克风     │         │  外挂 MPU6050 (PB8/PB9)      │
+│  USB 摄像头 / USB 麦克风     │         │  外挂 MPU6050 (PB6/PB7)      │
 └──────────────────────────────┘         └──────────────────────────────┘
 ```
 
@@ -231,14 +231,14 @@ MSP 同时配置 PA4/PA5；Cube 常规转换通道当前为 `ADC_CHANNEL_5`（PA
 ## 6. MPU6050（xBot 外挂模块）
 
 相对原版 newbot 整机，xBot **在 STM32 上额外外挂** MPU6050。  
-SCL/SDA 使用 `I2C1` 重映射脚；`gpio.c` 开漏复用 + `__HAL_AFIO_REMAP_I2C1_ENABLE()`。
+使用 **I2C1 默认脚**（`hi2c1`，400 kHz，PB6/PB7，无 remap）；驱动对齐 `ref/MPU_Test` / `ref/47-硬件I2C-MPU6050`。
 
-| 信号 | 引脚 | 端口宏 | 方向 | 说明 |
-|------|------|--------|------|------|
-| MPU_SCL | PB8 | `MPU_SCL_Pin` / `MPU_SCL_GPIO_Port` | 开漏 (AF) | I2C1_SCL（重映射） |
-| MPU_SDA | PB9 | `MPU_SDA_Pin` / `MPU_SDA_GPIO_Port` | 开漏 (AF) | I2C1_SDA（重映射） |
+| 信号 | 引脚 | 端口宏 / 句柄 | 方向 | 说明 |
+|------|------|---------------|------|------|
+| MPU_SCL | PB6 | `MPU_SCL_*` / I2C1_SCL | 开漏 (AF) | 接模块 SCL |
+| MPU_SDA | PB7 | `MPU_SDA_*` / I2C1_SDA | 开漏 (AF) | 接模块 SDA |
 
-模块另接 3.3V / GND（与 MCU 共地）。
+模块另接 3.3V / GND（与 MCU 共地）；默认 7-bit 地址 `0x68`（AD0=GND）。**不要**开启 I2C1 remap（否则脚会跑到 PB8/PB9）。
 
 ---
 
@@ -280,7 +280,7 @@ SCL/SDA 使用 `I2C1` 重映射脚；`gpio.c` 开漏复用 + `__HAL_AFIO_REMAP_I
 | GPIOA | PA13, PA14 | SWD |
 | GPIOB | PB3 | LED |
 | GPIOB | PB4 | 雷达电源（硬件；Cube 待补） |
-| GPIOB | PB8, PB9 | 外挂 MPU6050 |
+| GPIOB | PB6, PB7 | 外挂 MPU6050（I2C1） |
 | GPIOB | PB12, PB15 | TB6612 AIN2 / AIN1 |
 
 ---
@@ -310,9 +310,9 @@ SCL/SDA 使用 `I2C1` 重映射脚；`gpio.c` 开漏复用 + `__HAL_AFIO_REMAP_I
 #define BIN2_GPIO_Port          GPIOA
 #define LED_Pin                 GPIO_PIN_3
 #define LED_GPIO_Port           GPIOB
-#define MPU_SCL_Pin             GPIO_PIN_8
+#define MPU_SCL_Pin             GPIO_PIN_6
 #define MPU_SCL_GPIO_Port       GPIOB
-#define MPU_SDA_Pin             GPIO_PIN_9
+#define MPU_SDA_Pin             GPIO_PIN_7
 #define MPU_SDA_GPIO_Port       GPIOB
 ```
 

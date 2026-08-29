@@ -97,6 +97,18 @@ void task_chassis(void *argument)
     s_mcu_data.charger_connected = power.charger_connected;
     s_mcu_data.fully_charged = power.fully_charged;
 
+    {
+      AppImuState imu;
+      app_state_get_imu(&imu);
+      s_mcu_data.imu_ok = imu.ok;
+      s_mcu_data.ax = imu.ax;
+      s_mcu_data.ay = imu.ay;
+      s_mcu_data.az = imu.az;
+      s_mcu_data.gx = imu.gx;
+      s_mcu_data.gy = imu.gy;
+      s_mcu_data.gz = imu.gz;
+    }
+
     motor_drive_set(s_pwm1, s_pwm2);
     (void)soc_link_send_mcu_data(&s_mcu_data);
 

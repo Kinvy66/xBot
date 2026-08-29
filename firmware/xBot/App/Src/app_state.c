@@ -5,14 +5,16 @@
 #include "app_state.h"
 #include "main.h"
 
+#include <string.h>
+
 static AppPowerState s_power;
+static AppImuState s_imu;
 static volatile uint8_t s_link_ok;
 
 void app_state_init(void)
 {
-  s_power.vbat_mv = 0;
-  s_power.charger_connected = 0;
-  s_power.fully_charged = 0;
+  memset(&s_power, 0, sizeof(s_power));
+  memset(&s_imu, 0, sizeof(s_imu));
   s_link_ok = 0;
 }
 
@@ -38,6 +40,34 @@ void app_state_get_power(AppPowerState *out)
   primask = __get_PRIMASK();
   __disable_irq();
   *out = s_power;
+  if (!primask) {
+    __enable_irq();
+  }
+}
+
+void app_state_set_imu(const AppImuState *in)
+{
+  uint32_t primask;
+  if (in == NULL) {
+    return;
+  }
+  primask = __get_PRIMASK();
+  __disable_irq();
+  s_imu = *in;
+  if (!primask) {
+    __enable_irq();
+  }
+}
+
+void app_state_get_imu(AppImuState *out)
+{
+  uint32_t primask;
+  if (out == NULL) {
+    return;
+  }
+  primask = __get_PRIMASK();
+  __disable_irq();
+  *out = s_imu;
   if (!primask) {
     __enable_irq();
   }

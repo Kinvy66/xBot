@@ -5,13 +5,14 @@ import struct
 from dataclasses import dataclass
 from typing import Iterator
 
-MCU_SIZE = 16
+MCU_SIZE = 29
 CMD_SIZE = 12
 HEAD = b"DA"
 TAIL = b"TA\r\n"
 PERIOD_MS = 20
 
-_MCU_STRUCT = struct.Struct("<2sBhhhBBB4s")
+# DA + size + enc1/2 + vbat + ch/full/asr + imu_ok + ax..gz + TA\r\n
+_MCU_STRUCT = struct.Struct("<2sBhhhBBBB6h4s")
 _CMD_STRUCT = struct.Struct("<2sBhhB4s")
 
 
@@ -27,6 +28,13 @@ class McuData:
     charger_connected: int
     fully_charged: int
     asr_id: int
+    imu_ok: int
+    ax: int
+    ay: int
+    az: int
+    gx: int
+    gy: int
+    gz: int
     raw: bytes
 
     def to_dict(self) -> dict:
@@ -37,6 +45,13 @@ class McuData:
             "charger_connected": int(self.charger_connected),
             "fully_charged": int(self.fully_charged),
             "asr_id": self.asr_id,
+            "imu_ok": int(self.imu_ok),
+            "ax": self.ax,
+            "ay": self.ay,
+            "az": self.az,
+            "gx": self.gx,
+            "gy": self.gy,
+            "gz": self.gz,
             "hex": self.raw.hex(" ").upper(),
         }
 
@@ -74,6 +89,13 @@ def pack_mcu(
     charger_connected: int = 0,
     fully_charged: int = 0,
     asr_id: int = 0,
+    imu_ok: int = 0,
+    ax: int = 0,
+    ay: int = 0,
+    az: int = 0,
+    gx: int = 0,
+    gy: int = 0,
+    gz: int = 0,
 ) -> bytes:
     return _MCU_STRUCT.pack(
         HEAD,
@@ -84,6 +106,13 @@ def pack_mcu(
         1 if charger_connected else 0,
         1 if fully_charged else 0,
         int(asr_id) & 0xFF,
+        1 if imu_ok else 0,
+        _clamp_i16(ax),
+        _clamp_i16(ay),
+        _clamp_i16(az),
+        _clamp_i16(gx),
+        _clamp_i16(gy),
+        _clamp_i16(gz),
         TAIL,
     )
 
@@ -91,10 +120,29 @@ def pack_mcu(
 def parse_mcu_frame(buf: bytes) -> McuData | None:
     if len(buf) != MCU_SIZE:
         return None
-    head, size, enc1, enc2, vbat, charger, full, asr, tail = _MCU_STRUCT.unpack(buf)
+    (
+        head,
+        size,
+        enc1,
+        enc2,
+        vbat,
+        charger,
+        full,
+        asr,
+        imu_ok,
+        ax,
+        ay,
+        az,
+        gx,
+        gy,
+        gz,
+        tail,
+    ) = _MCU_STRUCT.unpack(buf)
     if head != HEAD or size != MCU_SIZE or tail != TAIL:
         return None
-    return McuData(enc1, enc2, vbat, charger, full, asr, buf)
+    return McuData(
+        enc1, enc2, vbat, charger, full, asr, imu_ok, ax, ay, az, gx, gy, gz, buf
+    )
 
 
 def extract_mcu_frames(buffer: bytearray) -> Iterator[McuData]:
@@ -121,11 +169,13 @@ def extract_mcu_frames(buffer: bytearray) -> Iterator[McuData]:
 if __name__ == "__main__":
     cmd = pack_cmd(1200, -1200, 1)
     assert cmd == bytes.fromhex("44 41 0C B0 04 50 FB 01 54 41 0D 0A"), cmd.hex()
-    raw = pack_mcu(-24, 100, 12000, 1, 0, 0)
+    raw = pack_mcu(-24, 100, 12000, 1, 0, 0, 1, 10, 20, 16384, -1, 2, 3)
+    assert len(raw) == MCU_SIZE == _MCU_STRUCT.size
     mcu = parse_mcu_frame(raw)
     assert mcu is not None
     assert mcu.encoder1 == -24 and mcu.encoder2 == 100 and mcu.vbat_mv == 12000
+    assert mcu.imu_ok == 1 and mcu.az == 16384 and mcu.gz == 3
     buf = bytearray(b"xx" + raw + raw[:7])
     frames = list(extract_mcu_frames(buf))
     assert len(frames) == 1 and len(buf) == 7
-    print("protocol ok")
+    print("protocol ok", MCU_SIZE)

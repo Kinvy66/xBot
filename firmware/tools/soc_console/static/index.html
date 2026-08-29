@@ -86,6 +86,56 @@
           <strong id="flags">—</strong>
         </article>
       </div>
+      <h3>IMU 姿态</h3>
+      <div class="imu-panel">
+        <div class="stage">
+          <div class="cube-wrap">
+            <div id="bot3d" class="cube">
+              <div class="face face-x">X+</div>
+              <div class="face face-x-neg">X−</div>
+              <div class="face face-y">Y+</div>
+              <div class="face face-y-neg">Y−</div>
+              <div class="face face-z">Z+</div>
+              <div class="face face-z-neg">Z−</div>
+            </div>
+          </div>
+          <p class="stage-hint">绿 X · 蓝 Y · 琥珀 Z</p>
+        </div>
+        <div class="imu-side">
+          <div class="row att-status">
+            <span>状态 <strong id="imuOk">—</strong></span>
+            <button type="button" class="ghost" id="btnResetAtt">复位 yaw</button>
+          </div>
+          <table class="imu-table">
+            <thead>
+              <tr><th></th><th>X</th><th>Y</th><th>Z</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>accel</th>
+                <td id="ax">—</td><td id="ay">—</td><td id="az">—</td>
+              </tr>
+              <tr>
+                <th>g</th>
+                <td id="axg">—</td><td id="ayg">—</td><td id="azg">—</td>
+              </tr>
+              <tr>
+                <th>gyro</th>
+                <td id="gx">—</td><td id="gy">—</td><td id="gz">—</td>
+              </tr>
+              <tr>
+                <th>°/s</th>
+                <td id="gxd">—</td><td id="gyd">—</td><td id="gzd">—</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="att-deg">
+            <article><span>roll</span><strong id="roll">—</strong></article>
+            <article><span>pitch</span><strong id="pitch">—</strong></article>
+            <article><span>yaw</span><strong id="yaw">—</strong></article>
+          </div>
+        </div>
+      </div>
       <canvas id="chart" width="720" height="180"></canvas>
       <div class="stats">
         <span>RX <strong id="rxHz">0</strong> Hz</span>
@@ -95,7 +145,7 @@
       </div>
       <h3>最近帧</h3>
       <pre id="txHex">TX CmdData (12 B)</pre>
-      <pre id="rxHex">RX McuData (16 B)</pre>
+      <pre id="rxHex">RX McuData (29 B)</pre>
     </section>
   </main>
   <script src="/static/app.js"></script>

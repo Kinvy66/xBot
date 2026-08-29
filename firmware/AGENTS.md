@@ -55,8 +55,8 @@
 
 引脚事实源：`xBot.ioc` + `Core/Inc/main.h`，并与 `docs/pin_map.md` 对齐。再生后仍须满足：
 
+- I2C1 默认脚为 PB6/PB7（MPU6050）；若改用 PB8/PB9 须 `__HAL_AFIO_REMAP_I2C1_ENABLE()`，并与 `docs/pin_map.md` 一致
 - 保持 `__HAL_AFIO_REMAP_SWJ_NOJTAG()`（或等价），否则 PA15 / PB3 / PB4 不可用
-- I2C1 使用 PB8/PB9 时保持 `__HAL_AFIO_REMAP_I2C1_ENABLE()`
 - PB4 为雷达电源 MOS；若启用，在 CubeMX 配 GPIO 宏与初始化，默认关闭
 
 ---
@@ -65,7 +65,7 @@
 
 实现或修改 USART1 协议时遵守 `docs/soc_mcu_protocol.md`：
 
-- `#pragma pack(1)`；`sizeof(McuData)==16`，`sizeof(CmdData)==12`
+- `#pragma pack(1)`；`sizeof(McuData)==29`，`sizeof(CmdData)==12`
 - 头 `'DA'`，尾 `"TA\r\n"`，`struct_size` = 整帧长度
 - 小端；周期 **20 ms**；无合法下行约 **100 ms** 后 PWM 清零
 - `encoder1`/`pwm1` = 左轮，`encoder2`/`pwm2` = 右轮；前进为正

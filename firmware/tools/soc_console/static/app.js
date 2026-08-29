@@ -163,6 +163,61 @@ function applyStatus(msg) {
   }
 }
 
+const ACCEL_LSB = 16384; /* ±2 g */
+const GYRO_LSB = 16.4; /* ±2000 °/s */
+const att = { roll: 0, pitch: 0, yaw: 0, t: 0 };
+
+function fmt1(v) {
+  return (Math.round(v * 10) / 10).toFixed(1);
+}
+
+function updateImu(mcu) {
+  $("imuOk").textContent = mcu.imu_ok ? "ok" : "fail";
+  $("ax").textContent = String(mcu.ax);
+  $("ay").textContent = String(mcu.ay);
+  $("az").textContent = String(mcu.az);
+  $("gx").textContent = String(mcu.gx);
+  $("gy").textContent = String(mcu.gy);
+  $("gz").textContent = String(mcu.gz);
+  $("axg").textContent = fmt1(mcu.ax / ACCEL_LSB);
+  $("ayg").textContent = fmt1(mcu.ay / ACCEL_LSB);
+  $("azg").textContent = fmt1(mcu.az / ACCEL_LSB);
+  $("gxd").textContent = fmt1(mcu.gx / GYRO_LSB);
+  $("gyd").textContent = fmt1(mcu.gy / GYRO_LSB);
+  $("gzd").textContent = fmt1(mcu.gz / GYRO_LSB);
+
+  if (!mcu.imu_ok) {
+    return;
+  }
+
+  const now = performance.now() / 1000;
+  const dt = att.t ? Math.min(0.08, Math.max(0.005, now - att.t)) : 0.02;
+  att.t = now;
+
+  const accRoll = Math.atan2(mcu.ay, mcu.az);
+  const accPitch = Math.atan2(-mcu.ax, Math.hypot(mcu.ay, mcu.az));
+  const gx = ((mcu.gx / GYRO_LSB) * Math.PI) / 180;
+  const gy = ((mcu.gy / GYRO_LSB) * Math.PI) / 180;
+  const gz = ((mcu.gz / GYRO_LSB) * Math.PI) / 180;
+  const a = 0.96;
+  att.roll = a * (att.roll + gx * dt) + (1 - a) * accRoll;
+  att.pitch = a * (att.pitch + gy * dt) + (1 - a) * accPitch;
+  att.yaw += gz * dt;
+
+  const rollDeg = (att.roll * 180) / Math.PI;
+  const pitchDeg = (att.pitch * 180) / Math.PI;
+  const yawDeg = (att.yaw * 180) / Math.PI;
+  $("roll").textContent = `${fmt1(rollDeg)}°`;
+  $("pitch").textContent = `${fmt1(pitchDeg)}°`;
+  $("yaw").textContent = `${fmt1(yawDeg)}°`;
+
+  const rig = $("bot3d");
+  if (rig) {
+    rig.style.transform =
+      `rotateY(${yawDeg}deg) rotateX(${pitchDeg}deg) rotateZ(${-rollDeg}deg)`;
+  }
+}
+
 function onTelemetry(msg) {
   applyStatus(msg);
   const mcu = msg.mcu;
@@ -175,6 +230,7 @@ function onTelemetry(msg) {
   $("flags").textContent =
     `${mcu.charger_connected ? "充电" : "未充"} / ${mcu.fully_charged ? "满" : "未满"} / ${mcu.asr_id}`;
   $("rxHex").textContent = "RX  " + (mcu.hex || "");
+  updateImu(mcu);
 
   pushHist(state.histEnc1, mcu.encoder1);
   pushHist(state.histEnc2, mcu.encoder2);
@@ -195,14 +251,14 @@ function drawChart() {
   const w = canvas.width;
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.strokeStyle = "#2c3442";
+  ctx.strokeStyle = "#d5dce6";
   ctx.beginPath();
   ctx.moveTo(0, h / 2);
   ctx.lineTo(w, h / 2);
   ctx.stroke();
-  strokeSeries(ctx, state.histEnc1, "#4fd2a0", 80);
-  strokeSeries(ctx, state.histEnc2, "#6aa8ff", 80);
-  strokeSeries(ctx, state.histVbat, "#e0b15a", 16000, false);
+  strokeSeries(ctx, state.histEnc1, "#0d8f63", 80);
+  strokeSeries(ctx, state.histEnc2, "#2563eb", 80);
+  strokeSeries(ctx, state.histVbat, "#b57912", 16000, false);
 }
 
 function strokeSeries(ctx, data, color, scale, bipolar = true) {
@@ -318,3 +374,15 @@ $("pwm2").addEventListener("input", () => {
 applyMaxPwm(2000);
 refreshPorts();
 connectWs();
+bindPad();
+$("btnResetAtt").addEventListener("click", () => {
+  att.yaw = 0;
+  $("yaw").textContent = "0.0°";
+  const rig = $("bot3d");
+  if (rig) {
+    const rollDeg = (att.roll * 180) / Math.PI;
+    const pitchDeg = (att.pitch * 180) / Math.PI;
+    rig.style.transform =
+      `rotateY(0deg) rotateX(${pitchDeg}deg) rotateZ(${-rollDeg}deg)`;
+  }
+});

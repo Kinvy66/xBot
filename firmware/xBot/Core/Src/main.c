@@ -28,7 +28,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "imu_drive.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -100,8 +100,10 @@ int main(void)
   MX_TIM3_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
-  MX_I2C2_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  /* MPU init before FreeRTOS — same timing as ref/MPU_Test (bare-metal) */
+  (void)imu_drive_init();
   /* Peripheral bring-up for tasks is done in app_main via task_chassis_init(). */
   /* USER CODE END 2 */
 

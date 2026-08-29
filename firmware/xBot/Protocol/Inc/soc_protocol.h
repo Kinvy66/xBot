@@ -19,7 +19,7 @@ extern "C" {
 #define SOC_PROTO_END3            ((uint8_t)'\r')
 #define SOC_PROTO_END4            ((uint8_t)'\n')
 
-#define SOC_PROTO_MCU_DATA_SIZE   16U
+#define SOC_PROTO_MCU_DATA_SIZE   29U
 #define SOC_PROTO_CMD_DATA_SIZE   12U
 
 #define SOC_PROTO_PERIOD_MS       20U
@@ -41,6 +41,14 @@ typedef struct
   uint8_t fully_charged;
 
   uint8_t asr_id;
+
+  uint8_t imu_ok; /* 1 = MPU sample valid this cycle */
+  int16_t ax;
+  int16_t ay;
+  int16_t az;
+  int16_t gx;
+  int16_t gy;
+  int16_t gz;
 
   uint8_t end1;
   uint8_t end2;
