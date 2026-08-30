@@ -5,7 +5,8 @@ xBot 复现 [newbot（小白机器人）](https://newbot.readthedocs.io) 硬件�
 依据：`firmware/xBot` CubeMX / 代码，以及 `ref/newbot` 组装说明、原厂 IO 定义与 ROS 节点配置。
 
 SOC ↔ STM32 串口帧协议见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。  
-原厂 ROS1 节点与话题见 [`newbot_ros1_architecture.md`](newbot_ros1_architecture.md)（xBot 将在 ROS2 重实现）。
+原厂 ROS1 节点与话题见 [`newbot_ros1_architecture.md`](newbot_ros1_architecture.md)（xBot 将在 ROS2 重实现）。  
+香橙派 overlay / 设备节点 / 点亮命令见 [`orangepi_system_setup.md`](orangepi_system_setup.md)。
 
 | 项目 | 内容 |
 |------|------|
@@ -33,19 +34,21 @@ SOC ↔ STM32 串口帧协议见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。
 └──────────────────────────────┘         └──────────────────────────────┘
 ```
 
-设备树 overlay（`/boot/orangepiEnv.txt`，与 newbot 一致）：
+设备树 overlay（`/boot/orangepiEnv.txt`）。  
+**Orange Pi 1.0.8 Jammy / 内核 6.6** 实测（无 `uart2-m0` dtbo；UART2 已在主 DTB 打开）：
 
 ```text
-overlays=spi3-m0-cs0-spidev uart2-m0 uart9-m2
+overlays=spi3-m0-cs0-spidev uart9-m2
 ```
 
-| 外设 | Linux 设备 | Overlay |
-|------|------------|---------|
-| 与 STM32 通信 | `/dev/ttyS2` | `uart2-m0` |
-| 激光雷达串口 | `/dev/ttyS9` | `uart9-m2` |
+| 外设 | Linux 设备（本镜像） | Overlay / 来源 |
+|------|----------------------|----------------|
+| 与 STM32 通信 | `/dev/ttyS2` | 主 DTB 默认 UART2 |
+| 激光雷达串口 | **`/dev/ttyS0`**（UART9 `fe6d0000`） | `uart9-m2`；newbot 旧文档为 `/dev/ttyS9` |
 | 圆形液晶屏 SPI | `/dev/spidev3.0` | `spi3-m0-cs0-spidev` |
+| USB 相机（HBVCAM） | **`/dev/video3`**（采集） | UVC；`/dev/video0` 为 RGA，勿用 |
 
-启用 `uart2-m0` 后，香橙派板载调试串口不可用，需用 SSH / 屏幕。
+联调底盘前勿让 `console=ttyS2` 占用串口。细节与命令见 [`orangepi_system_setup.md`](orangepi_system_setup.md)。
 
 ---
 
@@ -100,8 +103,8 @@ overlays=spi3-m0-cs0-spidev uart2-m0 uart9-m2
 
 | 雷达信号 | 香橙派信号 | 40Pin | Linux | 说明 |
 |----------|------------|-------|-------|------|
-| TX（数据） | RXD.9 | 29 | `/dev/ttyS9` | 雷达 → SOC |
-| CTL | GPIO3_D4 | 31 | wPi 20 / GPIO 124 | 转速控制；**M1C1_Mini 此线无效** |
+| TX（数据） | RXD.9 | 29 | **`/dev/ttyS0`**（本镜像）；旧文档 `/dev/ttyS9` | 雷达 → SOC；以 `dmesg` 中 `fe6d0000` 为准 |
+| RX / CTL | TXD.9 或 GPIO3_D4 | **22** 或 31 | UART9 TX / wPi 20 | **M1C1：绿线接 Pin22（TXD.9）**；YDLIDAR：绿线接 Pin31 CTL |
 | GND | GND | 30 | — | 信号地 |
 
 ### 3.2 雷达电源（控制板接口）
@@ -113,7 +116,7 @@ overlays=spi3-m0-cs0-spidev uart2-m0 uart9-m2
 | 5V（红） | 雷达电源 | 负极经 MOS，由 STM32 `PB4`（`LiDarSwitch`）控制通断 |
 | TX（黑） | 串口数据 | → 香橙派 RXD.9（Pin29） |
 | GND（金黄） | 地 | |
-| CTL（绿） | 转速 / 控制 | → GPIO3_D4（Pin31）；M1C1 可忽略或作 RX |
+| CTL（绿） | 转速 / UART RX | YDLIDAR → Pin31 CTL；**M1C1 → Pin22 TXD.9**（发 `A5 F0`） |
 
 常用类型：`YDLIDAR`、`M1C1_MINI`（`LIDAR_TYPE`）；USB 版可用 `/dev/ttyUSB0`。
 
@@ -121,10 +124,10 @@ overlays=spi3-m0-cs0-spidev uart2-m0 uart9-m2
 
 | 外设 | 连接方式 | 说明 |
 |------|----------|------|
-| 喇叭 | 香橙派 3.5mm → 控制板 `HP`/`SP` + 功放 | 组装时耳机线只焊右声道+地 |
-| USB 麦克风 | 香橙派 USB | PulseAudio 默认采集源 |
-| CI-03T 咪头 | 控制板 `MC` | 离线语音，不经香橙派 |
-| USB 摄像头 | 香橙派 USB（经上壳 USB 转接板） | 约 1280×800 |
+| 喇叭 | 香橙派 3.5mm → 控制板 `HP`/`SP` + 功放 | Pulse sink **`rk809_analog`**（ALSA card2）；`Playback Mux` HP/SPK；已验证 |
+| USB 麦克风 | 香橙派 USB | C-Media **`08bb:2902`**；Pulse 默认 source；`orangepi_mic_test.sh` 已验证 |
+| CI-03T 咪头 | 控制板 `MC` | 离线语音，不经香橙派（与 USB 麦无关） |
+| USB 摄像头 | 香橙派 USB（经上壳 USB 转接板） | HBVCAM：采集 **`/dev/video3`**，MJPG 1280×720；勿用 RGA 的 `/dev/video0` |
 | 散热风扇 | 香橙派 PWM 风扇座 | 设备树 `pwm-fan` |
 
 ## 5. 香橙派 40Pin 已用脚速查
@@ -142,9 +145,10 @@ overlays=spi3-m0-cs0-spidev uart2-m0 uart9-m2
 | 21 | SPI3_MISO | 屏侧 NC |
 | 23 | SPI3_CLK | 液晶屏 CLK |
 | 25 | GND | 液晶屏 GND |
-| 29 | RXD.9 | 雷达数据 |
+| 22 | TXD.9 | 雷达 RX（**M1C1** 绿线） |
+| 29 | RXD.9 | 雷达 TX（数据） |
 | 30 | GND | 雷达地 |
-| 31 | GPIO3_D4 | 雷达 CTL |
+| 31 | GPIO3_D4 | 雷达 CTL（**YDLIDAR**） |
 
 其余 40Pin 脚当前未用，可扩展。
 

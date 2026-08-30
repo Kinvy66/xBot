@@ -2,6 +2,8 @@
 
 本文记录参考工程 **newbot_ws v1.1**（ROS1 Noetic）在香橙派 3B 上的包结构、节点职责与接口。xBot 将在 **ROS2** 上重新实现同等能力，并叠加定制功能；硬件连接见 [`pin_map.md`](pin_map.md)，底盘串口帧见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。
 
+> **xBot 当前镜像差异**：Jammy 6.6 上雷达为 `/dev/ttyS0`（非下文 `/dev/ttyS9`），相机采集为 `/dev/video3`（非 `/dev/video0`），overlay 无 `uart2-m0`。详见 [`orangepi_system_setup.md`](orangepi_system_setup.md)。
+
 | 项目 | 内容 |
 |------|------|
 | 参考源码 | `ref/newbot/1.小白机器人ROS程序/newbot_ws_v1.1/newbot_ws` |
