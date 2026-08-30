@@ -11,6 +11,7 @@ xBot 复现 newbot 底盘协议。物理链路见 [`pin_map.md`](pin_map.md)；�
 | 周期 | **20 ms**（50 Hz） |
 | 参考源码 | MCU：`ref/newbot/.../USER/usart.h`、`MAIN/main.c`；SOC：`base_control/src/base_control.h`、`uart.cpp` |
 | 原厂说明 | `ref/newbot/readthedocs/4_technical_principle.md` §底盘控制节点 |
+| ROS1 节点 | [`newbot_ros1_architecture.md`](newbot_ros1_architecture.md) 中 `base_control` |
 
 ---
 

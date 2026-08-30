@@ -110,3 +110,8 @@ out/
 /firmware/xBot/build/
 /.vscode/
 ref
+
+# ROS2 colcon (keep src only; build on VM / Orange Pi)
+software/build/
+software/install/
+software/log/

@@ -4,7 +4,8 @@ xBot 复现 [newbot（小白机器人）](https://newbot.readthedocs.io) 硬件�
 
 依据：`firmware/xBot` CubeMX / 代码，以及 `ref/newbot` 组装说明、原厂 IO 定义与 ROS 节点配置。
 
-SOC ↔ STM32 串口帧协议见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。
+SOC ↔ STM32 串口帧协议见 [`soc_mcu_protocol.md`](soc_mcu_protocol.md)。  
+原厂 ROS1 节点与话题见 [`newbot_ros1_architecture.md`](newbot_ros1_architecture.md)（xBot 将在 ROS2 重实现）。
 
 | 项目 | 内容 |
 |------|------|
